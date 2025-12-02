@@ -360,12 +360,20 @@ router.post("/download-and-rename-excel", async (req, res) => {
         
         await frame.waitForTimeout(500);
         
-        // Get current date for filename (DD MMM format)
+        // Get current date in Singapore timezone
         const now = new Date();
-        const day = String(now.getDate()).padStart(2, '0');
+        const singaporeNow = new Date(now.toLocaleString('en-US', { 
+            timeZone: 'Asia/Singapore'
+        }));
+        
+        // Subtract 3 days
+        singaporeNow.setDate(singaporeNow.getDate() - 3);
+        
+        // Format date (DD MMM format)
+        const day = String(singaporeNow.getDate()).padStart(2, '0');
         const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
                            'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-        const month = monthNames[now.getMonth()];
+        const month = monthNames[singaporeNow.getMonth()];
         
         // Create filename: DD MMM #
         const fileNumber = index + 1;
@@ -380,7 +388,7 @@ router.post("/download-and-rename-excel", async (req, res) => {
         const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
         
         // Click the "Download To Excel" button
-        await frame.click('input[type="submit"][value="Download To Excel"]');
+        await frame.locator('input[type="submit"][value="Download To Excel"]').click();
         
         console.log('Waiting for download to start...');
         
