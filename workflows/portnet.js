@@ -25,7 +25,12 @@ async function launchAndGoto(url) {
     };
 }
 
+function getBrowser() {
+    return browser;
+}
+
 module.exports = {
     launchAndGoto,
-    getPage: () => page
+    getPage: () => page,
+    getBrowser
 };

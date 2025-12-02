@@ -35,5 +35,4 @@ function getGoogleAuthCode() {
     
     return code.toString().padStart(6, '0');
 }
-console.log(getGoogleAuthCode())
 module.exports = { getGoogleAuthCode };

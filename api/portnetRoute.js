@@ -1,10 +1,25 @@
 const express = require("express");
 const { launchAndGoto } = require("../workflows/portnet");
 const router = express.Router();
-const {getPage} = require('../workflows/portnet')
+const {getPage, getBrowser} = require('../workflows/portnet')
 const {getGoogleAuthCode} = require('../googleAuthToken.js')
 const path = require('path');
 const fs = require('fs');
+
+// kill chronium
+router.post('/stop-chromium', async (req, res) => {
+  try {
+    const browser = getBrowser(); // Get the browser instance
+    if (browser) {
+      await browser.close();
+      res.json({ success: true, message: 'Browser closed successfully' });
+    } else {
+      res.json({ success: false, message: 'No browser instance running' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}); 
 
 // go to page
 router.post("/fill-login-details", async (req, res) => {
@@ -297,7 +312,7 @@ router.post("/click-summary-of-igh-moves", async (req, res) => {
         
         const frameElement = await page.waitForSelector('iframe.frame__webview', { 
             state: 'attached', 
-            timeout: 10000 
+            timeout: 1500 
         });
         
         const frame = await frameElement.contentFrame();
@@ -305,21 +320,8 @@ router.post("/click-summary-of-igh-moves", async (req, res) => {
         if (!frame) {
             throw new Error('Could not access iframe content');
         }
-        
-        // Wait for the "Summary of IGH Moves" link to be visible
-        await frame.waitForSelector('a:has-text("Summary of IGH Moves")', { 
-            state: 'visible', 
-            timeout: 10000 
-        });
-        
-        console.log('Clicking "Summary of IGH Moves" link');
-        
+
         await frame.click('a:has-text("Summary of IGH Moves")');
-        
-        // Quick check that page is loading (optional - remove if you want even faster)
-        await frame.waitForTimeout(500);
-        
-        console.log('Clicked summary link');
         
         res.json({ 
             status: 'success', 
@@ -499,6 +501,5 @@ router.post("/click-back-button2", async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
-
 
 module.exports = router;
