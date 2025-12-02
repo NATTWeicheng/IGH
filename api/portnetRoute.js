@@ -38,6 +38,7 @@ router.post("/fill-login-details", async (req, res) => {
         await page.locator('body > app-root > app-login-page > div > mat-sidenav-container > mat-sidenav-content > div.login-form > form > div:nth-child(3) > button').click();
         
         // fill in 2fa (google authentication)
+        await page.waitForTimeout(1000);
         let googleAuthCode = getGoogleAuthCode();
         await page.locator('#PASSWORD').focus();
         await page.locator('#PASSWORD').fill(googleAuthCode);
