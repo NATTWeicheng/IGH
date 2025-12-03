@@ -299,8 +299,7 @@ router.post("/click-job-item", async (req, res) => {
     }
 });
 
-// continue here
-// route to download and rename excel files
+// route to download and rename pdf files
 router.post("/download-and-rename-pdf", async (req, res) => {
     try {
         const { index } = req.body; // Get index from request (0, 1, 2)
@@ -320,24 +319,27 @@ router.post("/download-and-rename-pdf", async (req, res) => {
         
         await frame.waitForTimeout(500);
         
-        // Get current date in Singapore timezone
-        const now = new Date();
-        const singaporeNow = new Date(now.toLocaleString('en-US', { 
-            timeZone: 'Asia/Singapore'
-        }));
+        // Extract invoice number from the page
+        let invoiceNumber = 'unknown';
+        try {
+            // Try to find the invoice number in the iframe
+            const invoiceText = await frame.textContent('body');
+            const invoiceMatch = invoiceText.match(/Invoice No\s*:(\w+)/);
+            
+            if (invoiceMatch) {
+                invoiceNumber = invoiceMatch[1].trim();
+                console.log(`Found invoice number: ${invoiceNumber}`);
+            } else {
+                console.warn('Invoice number not found, using index-based name');
+                invoiceNumber = `invoice_${index + 1}`;
+            }
+        } catch (extractErr) {
+            console.error('Error extracting invoice number:', extractErr);
+            invoiceNumber = `invoice_${index + 1}`;
+        }
         
-        // Subtract 3 days
-        singaporeNow.setDate(singaporeNow.getDate() - 1);
-        
-        // Format date (DD MMM format)
-        const day = String(singaporeNow.getDate()).padStart(2, '0');
-        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
-                           'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-        const month = monthNames[singaporeNow.getMonth()];
-        
-        // Create filename: DD MMM # (PDF instead of XLS)
-        const fileNumber = index + 1;
-        const newFileName = `${day} ${month} ${fileNumber}.pdf`;
+        // Use invoice number as filename
+        const newFileName = `${invoiceNumber}.pdf`;
         
         console.log(`Downloading page as PDF and saving as: ${newFileName}`);
         
@@ -358,9 +360,18 @@ router.post("/download-and-rename-pdf", async (req, res) => {
             }
         });
         
-        console.log(`PDF saved as: ${filePath}`);
-        page.goBack();
-        await page.waitForTimeout(1500); // Just give it time to navigate
+        // go back to the previous page in order to download next file
+        if (page && typeof page.isClosed === 'function' && !page.isClosed()) {
+            try {
+                await page.goBack({ waitUntil: 'load', timeout: 5000 }).catch(() => null);
+                await page.waitForTimeout(100);
+            } catch (goBackErr) {
+                console.warn('goBack failed but continuing:', goBackErr.message);
+            }
+        } else {
+            console.warn('Cannot goBack — page is closed or unavailable');
+        }
+        
         await frame.waitForTimeout(1000);
         
         res.json({ 
@@ -369,7 +380,7 @@ router.post("/download-and-rename-pdf", async (req, res) => {
             fileName: newFileName,
             filePath: filePath,
             index: index,
-            fileNumber: fileNumber
+            invoiceNumber: invoiceNumber
         });
 
     } catch (err) {
@@ -377,5 +388,4 @@ router.post("/download-and-rename-pdf", async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
-
 module.exports = router;
