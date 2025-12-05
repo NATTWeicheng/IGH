@@ -11,6 +11,9 @@ app.use('/dailyJob', dailyJobRoute)
 const dailyInvoiceRoute = require('./api/dailyInvoiceRoute')
 app.use('/dailyInvoice', dailyInvoiceRoute)
 
+const LDNSIRroute = require('./api/LDNSIRroute')
+app.use('/LDNSIR', LDNSIRroute)
+
 app.get('/', (req, res) => {
     res.send("This is the API server.")
 })

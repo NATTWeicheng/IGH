@@ -247,63 +247,6 @@ router.post("/click-job-item", async (req, res) => {
     }
 });
 
-// route to click on the "detail"
-router.post("/click-job-item", async (req, res) => {
-    try {
-        const { index } = req.body; // Get index from the request body (0, 1, or 2)
-        
-        page = getPage();
-        
-        const frameElement = await page.waitForSelector('iframe.frame__webview', { 
-            state: 'attached', 
-            timeout: 10000 
-        });
-        
-        const frame = await frameElement.contentFrame();
-        
-        if (!frame) {
-            throw new Error('Could not access iframe content');
-        }
-        
-        // Wait for Details links to be visible
-        await frame.waitForSelector('a:has-text("Details")', { 
-            state: 'visible', 
-            timeout: 10000 
-        });
-        
-        await frame.waitForTimeout(500);
-        
-        // Get all Details links
-        const detailsLinks = await frame.locator('a:has-text("Details")').all();
-        
-        console.log(`Found ${detailsLinks.length} Details links`);
-        console.log(`Clicking Details link at index: ${index}`);
-        
-        // Check if index is valid
-        if (index >= detailsLinks.length) {
-            throw new Error(`Index ${index} out of range. Only ${detailsLinks.length} Details links available.`);
-        }
-        
-        // Click the specific Details link based on index
-        // index 0 = first Details link
-        // index 1 = second Details link  
-        // index 2 = third Details link
-        await detailsLinks[index].click();
-        
-        await frame.waitForTimeout(2000); // Wait for the details page to load
-        
-        res.json({ 
-            status: 'success', 
-            message: `Successfully clicked Details link at index ${index}`,
-            index: index,
-            clickedItem: index + 1 // For display: 1, 2, 3 instead of 0, 1, 2
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ status: 'error', message: err.message });
-    }
-});
 
 // route to click on the summary after clicking on detail
 router.post("/click-summary-of-igh-moves", async (req, res) => {

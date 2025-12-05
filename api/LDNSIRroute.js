@@ -81,7 +81,7 @@ router.post("/click-supplier-management", async (req, res) => {
     }
 });
 
-// route to click on enquire job payment under payment advice
+// route to click on enquire LD/NSIR invoice under payment advice
 router.post("/click-enquire-invoice", async (req, res) => {
     try {
         page = getPage();
@@ -97,11 +97,10 @@ router.post("/click-enquire-invoice", async (req, res) => {
         if (!frame) {
             throw new Error('Could not access iframe content');
         }
-        
         // Click the link inside the iframe
-        await frame.locator('a[href="/SUMS-WLS12/SUMSMainServlet?requestID=initInvoiceEnqID"]').click();
+        await frame.locator('a[href="/SUMS-WLS12/SUMSMainServlet?requestID=initNisrLdInvoiceEnqID"]').click();
         
-        res.json({ status: 'success', message: 'Clicked Enquire Invoice' });
+        res.json({ status: 'success', message: 'Clicked Enquire LD/NSIR Invoice' });
 
     } catch (err) {
         console.error(err);
@@ -125,31 +124,24 @@ router.post("/fill-job-payment-table", async (req, res) => {
             throw new Error('Could not access iframe content');
         }
         
-        await frame.waitForSelector('select[name="jobType"]', { 
+        await frame.waitForSelector('select[name="invoiceType"]', { 
             state: 'visible', 
             timeout: 10000 
         });
         
         await frame.waitForTimeout(500);
         
-        await frame.selectOption('select[name="jobType"]', 'IGH');
-        await frame.waitForTimeout(500);
-        
-        await frame.waitForSelector('input[name="accepted"][value="Y"]', {
-            state: 'visible',
-            timeout: 5000
-        });
-        await frame.click('input[name="accepted"][value="Y"]');
+        await frame.selectOption('select[name="invoiceType"]', 'LD');
         await frame.waitForTimeout(500);
         
         // Date logic
         const today = new Date();
-        const oneDayAgo = new Date(today);
-        oneDayAgo.setDate(today.getDate() - 1);
+        const oneWeekAgo = new Date(today);
+        oneWeekAgo.setDate(today.getDate() - 7);
         
-        const day = String(oneDayAgo.getDate()).padStart(2, '0');
-        const month = String(oneDayAgo.getMonth() + 1).padStart(2, '0');
-        const year = String(oneDayAgo.getFullYear());
+        const day = String(oneWeekAgo.getDate()).padStart(2, '0');
+        const month = String(oneWeekAgo.getMonth() + 1).padStart(2, '0');
+        const year = String(oneWeekAgo.getFullYear());
         
         await frame.fill('input[name="fDD"]', day);
         await frame.waitForTimeout(200);
@@ -157,15 +149,9 @@ router.post("/fill-job-payment-table", async (req, res) => {
         await frame.waitForTimeout(200);
         await frame.fill('input[name="fYYYY"]', year);
         
-        await frame.fill('input[name="tDD"]', day);
-        await frame.waitForTimeout(200);
-        await frame.fill('input[name="tMM"]', month);
-        await frame.waitForTimeout(200);
-        await frame.fill('input[name="tYYYY"]', year);
-        
         await frame.waitForTimeout(500);
         
-        await frame.locator('body > form > table > tbody > tr:nth-child(8) > td > input[type=submit]:nth-child(1)').click();
+        await frame.locator('body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)').click();
         
         // Wait for the "Details" links to appear
         await frame.waitForSelector('a:has-text("Detail Information")', { 
@@ -240,6 +226,7 @@ router.post("/click-job-item", async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
+
 
 // route to download and rename pdf files
 router.post("/download-and-rename-pdf", async (req, res) => {
@@ -330,5 +317,4 @@ router.post("/download-and-rename-pdf", async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
-
 module.exports = router;
