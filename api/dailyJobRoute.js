@@ -31,13 +31,11 @@ router.post("/fill-login-details", async (req, res) => {
         let authResult = getGoogleAuthCode();
         console.log(`Pre-login timing check: ${authResult.code}, ${authResult.secondsRemaining}s remaining`);
         
-        // If less than 15 seconds, wait for fresh code BEFORE logging in
+        // If less than 15 seconds, wait for fresh code
         if (authResult.secondsRemaining < 15) {
-            console.log('Not enough time for login flow, waiting for fresh code window...');
             const waitTime = (authResult.secondsRemaining + 2) * 1000;
             await page.waitForTimeout(waitTime);
             authResult = getGoogleAuthCode();
-            console.log(`Fresh code ready: ${authResult.code}, ${authResult.secondsRemaining}s remaining`);
         }
         
         // Fill username
@@ -83,7 +81,7 @@ router.post("/fill-login-details", async (req, res) => {
             await page.locator('#PASSWORD').click();
             await page.waitForTimeout(200);
             
-            // Try type instead of fill
+            // Type password
             await page.locator('#PASSWORD').type(authResult.code, { delay: 50 });
             
             const retryValue = await page.locator('#PASSWORD').inputValue();
@@ -94,12 +92,8 @@ router.post("/fill-login-details", async (req, res) => {
             }
         }
         
-        console.log(`Submitting 2FA code: ${authResult.code}`);
-        
         // Click continue
         await page.locator('#Continue').click();
-        
-        console.log('Waiting for response...');
         
         // Wait a bit for processing
         await page.waitForTimeout(3000);
@@ -129,7 +123,11 @@ router.post("/click-others", async (req, res) => {
     try {
         await checkPageWithRetry(3);
         const page = getPage();
+
+        // Selector for "other"
         let otherSelector = 'body > app-root > div > div.slidebar > div:nth-child(8) > div'
+
+        // Click on the button
         await page.locator(otherSelector).click()
         res.status(200).send({ status: "success" });
 
@@ -144,7 +142,11 @@ router.post("/click-supplier-management", async (req, res) => {
     try {
         await checkPageWithRetry(3);
         const page = getPage();
+
+        // Selector for Supplier Management Button
         let supplierManagamentSelector = 'body > app-root > div > div.main-content > app-container-group > div > div.half-width > div:nth-child(2) > div:nth-child(2) > div > div.lv2-panel > div:nth-child(5) > div.mat-mdc-menu-trigger.subheading.flex-layout'
+        
+        // Click on the button
         await page.locator(supplierManagamentSelector).click()
         res.status(200).send({ status: "success" });
 
@@ -205,7 +207,7 @@ router.post("/fill-job-payment-table", async (req, res) => {
         if (!frame) {
             throw new Error('Could not access iframe content');
         }
-        
+        // Select job type as IGH
         await frame.waitForSelector('select[name="jobTy"]', { 
             state: 'visible', 
             timeout: 10000 
@@ -216,6 +218,7 @@ router.post("/fill-job-payment-table", async (req, res) => {
         await frame.selectOption('select[name="jobTy"]', 'IGH');
         await frame.waitForTimeout(500);
         
+        // Select accepted radio button
         await frame.waitForSelector('input[name="acptI"][value="Y"]', {
             state: 'visible',
             timeout: 5000
@@ -226,18 +229,21 @@ router.post("/fill-job-payment-table", async (req, res) => {
         // Date logic
         const today = new Date();
         const threeDaysAgo = new Date(today);
+        // Set the date to 3 days before current date
         threeDaysAgo.setDate(today.getDate() - 3);
         
         const day = String(threeDaysAgo.getDate()).padStart(2, '0');
         const month = String(threeDaysAgo.getMonth() + 1).padStart(2, '0');
         const year = String(threeDaysAgo.getFullYear());
         
+        // Fill From date
         await frame.fill('input[name="shftDtFrDD"]', day);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="shftDtFrMM"]', month);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="shftDtFrYYYY"]', year);
         
+        // Fill To date
         await frame.fill('input[name="shftDtToDD"]', day);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="shftDtToMM"]', month);
@@ -246,6 +252,7 @@ router.post("/fill-job-payment-table", async (req, res) => {
         
         await frame.waitForTimeout(500);
         
+        // Click submit button
         await frame.locator('body > form > table:nth-child(8) > tbody > tr > td > input[type=button]:nth-child(1)').click();
         
         // Wait for the "Details" links to appear
@@ -466,12 +473,8 @@ router.post("/click-back-button1", async (req, res) => {
         
         await frame.waitForTimeout(500);
         
-        console.log('Clicking Back button...');
-        
         // Click the "Back" button
         await frame.click('input[type="button"][value="Back"]');
-        
-        console.log('Back button clicked successfully');
         
         // Wait for navigation to complete
         await frame.waitForTimeout(1000);
@@ -516,8 +519,6 @@ router.post("/click-back-button2", async (req, res) => {
         
         // Click the "Back" submit button
         await frame.click('input[type="submit"][value="Back"]');
-        
-        console.log('Back button clicked successfully');
         
         // Wait for navigation to complete
         await frame.waitForTimeout(1000);

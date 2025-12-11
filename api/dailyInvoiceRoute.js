@@ -81,7 +81,7 @@ router.post("/fill-login-details", async (req, res) => {
             await page.locator('#PASSWORD').click();
             await page.waitForTimeout(200);
             
-            // Try type instead of fill
+            // Type password
             await page.locator('#PASSWORD').type(authResult.code, { delay: 50 });
             
             const retryValue = await page.locator('#PASSWORD').inputValue();
@@ -123,7 +123,11 @@ router.post("/click-others", async (req, res) => {
     try {
         await checkPageWithRetry(3);
         const page = getPage();
+
+        // Selector for "other"
         let otherSelector = 'body > app-root > div > div.slidebar > div:nth-child(8) > div'
+
+        // Click on the button
         await page.locator(otherSelector).click()
         res.status(200).send({ status: "success" });
 
@@ -138,7 +142,11 @@ router.post("/click-supplier-management", async (req, res) => {
     try {
         await checkPageWithRetry(3);
         const page = getPage();
+
+        // Selector for Supplier Management Button
         let supplierManagamentSelector = 'body > app-root > div > div.main-content > app-container-group > div > div.half-width > div:nth-child(2) > div:nth-child(2) > div > div.lv2-panel > div:nth-child(5) > div.mat-mdc-menu-trigger.subheading.flex-layout'
+        
+        // Click on the button
         await page.locator(supplierManagamentSelector).click()
         res.status(200).send({ status: "success" });
 
@@ -183,6 +191,7 @@ router.post("/fill-job-payment-table", async (req, res) => {
         await checkPageWithRetry(3);
         const page = getPage();
         
+        // Iframe selector
         const frameElement = await page.waitForSelector('iframe.frame__webview', { 
             state: 'attached', 
             timeout: 10000 
@@ -194,6 +203,7 @@ router.post("/fill-job-payment-table", async (req, res) => {
             throw new Error('Could not access iframe content');
         }
         
+        // Select Job Type as IGH
         await frame.waitForSelector('select[name="jobType"]', { 
             state: 'visible', 
             timeout: 10000 
@@ -204,6 +214,7 @@ router.post("/fill-job-payment-table", async (req, res) => {
         await frame.selectOption('select[name="jobType"]', 'IGH');
         await frame.waitForTimeout(500);
         
+        // Check accepted radio button
         await frame.waitForSelector('input[name="accepted"][value="Y"]', {
             state: 'visible',
             timeout: 5000
@@ -214,18 +225,21 @@ router.post("/fill-job-payment-table", async (req, res) => {
         // Date logic
         const today = new Date();
         const oneDayAgo = new Date(today);
+        // Get 1 day before current date
         oneDayAgo.setDate(today.getDate() - 1);
         
         const day = String(oneDayAgo.getDate()).padStart(2, '0');
         const month = String(oneDayAgo.getMonth() + 1).padStart(2, '0');
         const year = String(oneDayAgo.getFullYear());
         
+        // Fill the from section
         await frame.fill('input[name="fDD"]', day);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="fMM"]', month);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="fYYYY"]', year);
         
+        // Fill the to section
         await frame.fill('input[name="tDD"]', day);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="tMM"]', month);
@@ -234,6 +248,7 @@ router.post("/fill-job-payment-table", async (req, res) => {
         
         await frame.waitForTimeout(500);
         
+        // Submit button
         await frame.locator('body > form > table > tbody > tr:nth-child(8) > td > input[type=submit]:nth-child(1)').click();
         
         // Wait for the "Details" links to appear
@@ -270,6 +285,7 @@ router.post("/click-job-item", async (req, res) => {
         await checkPageWithRetry(3);
         const page = getPage();
         
+        // Iframe
         const frameElement = await page.waitForSelector('iframe.frame__webview', { 
             state: 'attached', 
             timeout: 10000 
@@ -319,6 +335,7 @@ router.post("/download-and-rename-pdf", async (req, res) => {
         await checkPageWithRetry(3);
         const page = getPage();
         
+        // Iframe
         const frameElement = await page.waitForSelector('iframe.frame__webview', { 
             state: 'attached', 
             timeout: 10000 
