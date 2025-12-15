@@ -480,7 +480,7 @@ router.post("/download-and-rename-pdf", async (req, res) => {
         
         console.log(`Downloading page as PDF and saving as: ${newFileName}`);
         
-        const downloadPath = 'C:\\Intern\\Test IGH';
+        const downloadPath = (process.env.LOCALFILE_PATH);
         const filePath = path.join(downloadPath, newFileName);
         
         await page.pdf({
@@ -525,7 +525,7 @@ router.post("/download-and-rename-pdf", async (req, res) => {
 // route to delete all files in the local folder
 router.delete('/delete-files', async (req, res) => {
   try {
-    const downloadPath = 'C:\\Intern\\Test IGH';
+    const downloadPath = (process.env.LOCALFILE_PATH);
     const files = fs.readdirSync(downloadPath);
 
     for (const file of files) {

@@ -5,6 +5,8 @@ const {getGoogleAuthCode} = require('../googleAuthToken.js')
 const path = require('path');
 const fs = require('fs');
 
+
+
 // kill chronium
 router.post('/stop-chromium', async (req, res) => {
   try {
@@ -426,7 +428,7 @@ router.post("/download-and-rename-excel", async (req, res) => {
         console.log(`Downloading Excel file and renaming to: ${newFileName}`);
         
         // Save to file - define path
-        const downloadPath = 'C:\\Intern\\Test IGH';
+        const downloadPath = (process.env.LOCALFILE_PATH);
         
         // Set up download listener on the PAGE (not frame)
         const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
@@ -549,7 +551,7 @@ router.post("/click-back-button2", async (req, res) => {
 // route to delete all files in the local folder
 router.delete('/delete-files', async (req, res) => {
   try {
-    const downloadPath = 'C:\\Intern\\Test IGH';
+    const downloadPath = (process.env.LOCALFILE_PATH);
     const files = fs.readdirSync(downloadPath);
 
     for (const file of files) {

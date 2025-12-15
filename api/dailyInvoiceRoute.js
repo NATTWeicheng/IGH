@@ -373,7 +373,7 @@ router.post("/download-and-rename-pdf", async (req, res) => {
         console.log(`Downloading page as PDF and saving as: ${newFileName}`);
         
         // Save to file - define path
-        const downloadPath = 'C:\\Intern\\Test IGH';
+        const downloadPath = (process.env.LOCALFILE_PATH);
         const filePath = path.join(downloadPath, newFileName);
         
         // Generate PDF directly from the page
