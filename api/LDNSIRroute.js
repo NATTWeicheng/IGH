@@ -110,6 +110,7 @@ router.post("/fill-login-details", async (req, res) => {
             throw new Error(`2FA Error: ${errorText}`);
         }
 
+        res.json(result);
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ 
@@ -489,7 +490,7 @@ router.post("/download-and-rename-pdf", async (req, res) => {
         console.log(`Downloading page as PDF and saving as: ${newFileName}`);
         
         // Save to file - define path
-        const downloadPath = 'C:\\Intern\\Test IGH';
+        const downloadPath = 'C:\\Users\\benny\\Desktop\\n8n-ld-nisr-invoices'; //"C:\Users\benny\Desktop\n8n-ld-nisr-invoices"
         const filePath = path.join(downloadPath, newFileName);
         
         // Generate PDF directly from the page
@@ -537,7 +538,7 @@ router.post("/download-and-rename-pdf", async (req, res) => {
 // route to delete all files in the local folder
 router.delete('/delete-files', async (req, res) => {
   try {
-    const downloadPath = 'C:\\Intern\\Test IGH';
+    const downloadPath = 'C:\\Users\\benny\\Desktop\\n8n-ld-nisr-invoices';
     const files = fs.readdirSync(downloadPath);
 
     for (const file of files) {

@@ -109,6 +109,7 @@ router.post("/fill-login-details", async (req, res) => {
             throw new Error(`2FA Error: ${errorText}`);
         }
 
+        res.json(result);
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ 
@@ -410,7 +411,7 @@ router.post("/download-and-rename-excel", async (req, res) => {
         console.log(`Downloading Excel file and renaming to: ${newFileName}`);
         
         // Save to file - define path
-        const downloadPath = 'C:\\Intern\\Test IGH';
+        const downloadPath = 'C:\\Users\\benny\\Desktop\\n8n-igh-daily';
         
         // Set up download listener on the PAGE (not frame)
         const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
@@ -533,5 +534,25 @@ router.post("/click-back-button2", async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
+
+// route to clear all files from local folder
+router.delete('/delete-files', async (req, res) => {
+    try {
+      const downloadPath = 'C:\\Users\\benny\\Desktop\\n8n-igh-daily';
+      const files = fs.readdirSync(downloadPath);
+  
+      for (const file of files) {
+        const filePath = path.join(downloadPath, file);
+        if (fs.lstatSync(filePath).isFile()) {
+          fs.unlinkSync(filePath);
+        }
+      }
+  
+      res.status(200).json({ message: 'All files deleted successfully.' });
+    } catch (error) {
+      console.error('Error deleting files:', error);
+      res.status(500).json({ error: 'Failed to delete files.' });
+    }
+  });
 
 module.exports = router;
