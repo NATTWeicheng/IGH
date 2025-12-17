@@ -296,32 +296,30 @@ router.post("/click-job-payment", async (req, res) => {
 
 router.post("/fill-job-payment-table", async (req, res) => {
     try {
-        const { currentDate } = req.body; // Get currentDate from request body
-        
+        const { currentDate } = req.body;
+
         const page = getPage();
-        
-        const frameElement = await page.waitForSelector('iframe.frame__webview', { 
-            state: 'attached', 
-            timeout: 10000 
+
+        const frameElement = await page.waitForSelector('iframe.frame__webview', {
+            state: 'attached',
+            timeout: 10000
         });
-        
+
         const frame = await frameElement.contentFrame();
-        
         if (!frame) {
             throw new Error('Could not access iframe content');
         }
-        
+
         // Select job type as IGH
-        await frame.waitForSelector('select[name="jobTy"]', { 
-            state: 'visible', 
-            timeout: 10000 
+        await frame.waitForSelector('select[name="jobTy"]', {
+            state: 'visible',
+            timeout: 10000
         });
-        
+
         await frame.waitForTimeout(500);
-        
         await frame.selectOption('select[name="jobTy"]', 'IGH');
         await frame.waitForTimeout(500);
-        
+
         // Select accepted radio button
         await frame.waitForSelector('input[name="acptI"][value="Y"]', {
             state: 'visible',
@@ -329,70 +327,68 @@ router.post("/fill-job-payment-table", async (req, res) => {
         });
         await frame.click('input[name="acptI"][value="Y"]');
         await frame.waitForTimeout(500);
-        
-        // Date logic
-        let today;
-        
+
+        // ================= DATE LOGIC =================
+        let today = new Date(); // default fallback
+
         if (currentDate && currentDate.trim() !== '') {
-            // Validate DD/MM/YYYY format
             const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-            
+
             if (!datePattern.test(currentDate)) {
-                throw new Error('Invalid date format. Expected DD/MM/YYYY');
+                console.warn(`[DATE] Invalid format, using system date: ${currentDate}`);
+            } else {
+                const [dd, mm, yyyy] = currentDate.split('/').map(Number);
+                const parsedDate = new Date(yyyy, mm - 1, dd);
+
+                if (isNaN(parsedDate.getTime())) {
+                    console.warn(`[DATE] Invalid date value, using system date: ${currentDate}`);
+                } else {
+                    today = parsedDate;
+                }
             }
-            
-            const [day, month, year] = currentDate.split('/');
-            today = new Date(year, month - 1, day);
-            
-            // Check if the date is valid
-            if (isNaN(today.getTime())) {
-                throw new Error('Invalid date provided');
-            }
-        } else {
-            // Use actual current date
-            today = new Date();
         }
-        
+
+        // subtract 3 days
         const threeDaysAgo = new Date(today);
         threeDaysAgo.setDate(today.getDate() - 3);
-        
+
         const day = String(threeDaysAgo.getDate()).padStart(2, '0');
         const month = String(threeDaysAgo.getMonth() + 1).padStart(2, '0');
         const year = String(threeDaysAgo.getFullYear());
-        
+
         // Fill From date
         await frame.fill('input[name="shftDtFrDD"]', day);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="shftDtFrMM"]', month);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="shftDtFrYYYY"]', year);
-        
+
         // Fill To date
         await frame.fill('input[name="shftDtToDD"]', day);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="shftDtToMM"]', month);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="shftDtToYYYY"]', year);
-        
+
         await frame.waitForTimeout(500);
-        
-        // Click submit button
-        await frame.locator('body > form > table:nth-child(8) > tbody > tr > td > input[type=button]:nth-child(1)').click();
-        
-        // Wait for the "Details" links to appear
-        await frame.waitForSelector('a:has-text("Details")', { 
-            state: 'visible', 
-            timeout: 10000 
+
+        // Submit
+        await frame.locator(
+            'body > form > table:nth-child(8) > tbody > tr > td > input[type=button]:nth-child(1)'
+        ).click();
+
+        // Wait for results
+        await frame.waitForSelector('a:has-text("Details")', {
+            state: 'visible',
+            timeout: 10000
         });
-        
+
         await frame.waitForTimeout(1000);
-        
-        // Get ONLY the rows with "Details" links
+
         const detailsLinks = await frame.locator('a:has-text("Details")').all();
-        
         console.log(`Found ${detailsLinks.length} job items with Details links`);
-        
-        res.status(200).json(successResponse('fill-job-payment-table', { 
+
+        res.status(200).json(successResponse('fill-job-payment-table', {
             message: 'Search completed',
             itemCount: detailsLinks.length,
             fromDate: `${day}/${month}/${year}`
@@ -403,6 +399,7 @@ router.post("/fill-job-payment-table", async (req, res) => {
         res.status(200).json(errorResponse('fill-job-payment-table', err));
     }
 });
+
 
 // Click a specific "Details" link by index
 router.post("/click-job-item", async (req, res) => {

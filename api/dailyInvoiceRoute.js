@@ -315,27 +315,24 @@ router.post("/fill-job-payment-table", async (req, res) => {
         await frame.click('input[name="accepted"][value="Y"]');
         await frame.waitForTimeout(500);
 
-        // ===== DATE LOGIC WITH VALIDATION =====
-        let baseDate;
-        
+        // ================= DATE LOGIC =================
+        let baseDate = new Date(); // default fallback
+
         if (currentDate && currentDate.trim() !== '') {
-            // Validate DD/MM/YYYY format
             const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-            
-            if (datePattern.test(currentDate)) {
+
+            if (!datePattern.test(currentDate)) {
+                console.warn(`[DATE] Invalid format (expected DD/MM/YYYY): ${currentDate}`);
+            } else {
                 const [dd, mm, yyyy] = currentDate.split('/').map(Number);
                 const parsedDate = new Date(yyyy, mm - 1, dd);
-                
-                // Check if the date is valid
-                if (!isNaN(parsedDate.getTime())) {
+
+                if (isNaN(parsedDate.getTime())) {
+                    console.warn(`[DATE] Invalid date value: ${currentDate}`);
+                } else {
                     baseDate = parsedDate;
                 }
             }
-        }
-        
-        // If baseDate wasn't set (no date, invalid format, or invalid date), use current date
-        if (!baseDate) {
-            baseDate = new Date();
         }
 
         // Subtract 1 day
@@ -362,7 +359,9 @@ router.post("/fill-job-payment-table", async (req, res) => {
         await frame.waitForTimeout(500);
 
         // Submit button
-        await frame.locator('body > form > table > tbody > tr:nth-child(8) > td > input[type=submit]:nth-child(1)').click();
+        await frame.locator(
+            'body > form > table > tbody > tr:nth-child(8) > td > input[type=submit]:nth-child(1)'
+        ).click();
 
         // Wait for the "Details" links to appear
         await frame.waitForSelector('a:has-text("Detail Information")', { 
@@ -371,7 +370,6 @@ router.post("/fill-job-payment-table", async (req, res) => {
         });
         await frame.waitForTimeout(1000);
 
-        // Get ONLY the rows with "Details" links (the actual job rows)
         const detailsLinks = await frame.locator('a:has-text("Detail Information")').all();
         console.log(`Found ${detailsLinks.length} job items with Details links`);
 
@@ -386,6 +384,8 @@ router.post("/fill-job-payment-table", async (req, res) => {
         res.status(200).json(errorResponse('fill-job-payment-table', err));
     }
 });
+
+
 // Click a specific "Details" link by index
 router.post("/click-job-item", async (req, res) => {
     try {
