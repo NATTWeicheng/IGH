@@ -187,9 +187,106 @@ router.post("/click-enquire-invoice", async (req, res) => {
 });
 
 // route to select IGH from the dropdown; click accepted and fill date to 1 day ago
+// DO NOT DELETE
+// router.post("/fill-job-payment-table", async (req, res) => {
+//     try {
+        
+//         const page = getPage();
+        
+//         // Iframe selector
+//         const frameElement = await page.waitForSelector('iframe.frame__webview', { 
+//             state: 'attached', 
+//             timeout: 10000 
+//         });
+        
+//         const frame = await frameElement.contentFrame();
+        
+//         if (!frame) {
+//             throw new Error('Could not access iframe content');
+//         }
+        
+//         // Select Job Type as IGH
+//         await frame.waitForSelector('select[name="jobType"]', { 
+//             state: 'visible', 
+//             timeout: 10000 
+//         });
+        
+//         await frame.waitForTimeout(500);
+        
+//         await frame.selectOption('select[name="jobType"]', 'IGH');
+//         await frame.waitForTimeout(500);
+        
+//         // Check accepted radio button
+//         await frame.waitForSelector('input[name="accepted"][value="Y"]', {
+//             state: 'visible',
+//             timeout: 5000
+//         });
+//         await frame.click('input[name="accepted"][value="Y"]');
+//         await frame.waitForTimeout(500);
+        
+//         // Date logic
+//         const today = new Date();
+//         const oneDayAgo = new Date(today);
+//         // Get 1 day before current date
+//         oneDayAgo.setDate(today.getDate() - 1);
+        
+//         const day = String(oneDayAgo.getDate()).padStart(2, '0');
+//         const month = String(oneDayAgo.getMonth() + 1).padStart(2, '0');
+//         const year = String(oneDayAgo.getFullYear());
+        
+//         // Fill the from section
+//         await frame.fill('input[name="fDD"]', day);
+//         await frame.waitForTimeout(200);
+//         await frame.fill('input[name="fMM"]', month);
+//         await frame.waitForTimeout(200);
+//         await frame.fill('input[name="fYYYY"]', year);
+        
+//         // Fill the to section
+//         await frame.fill('input[name="tDD"]', day);
+//         await frame.waitForTimeout(200);
+//         await frame.fill('input[name="tMM"]', month);
+//         await frame.waitForTimeout(200);
+//         await frame.fill('input[name="tYYYY"]', year);
+        
+//         await frame.waitForTimeout(500);
+        
+//         // Submit button
+//         await frame.locator('body > form > table > tbody > tr:nth-child(8) > td > input[type=submit]:nth-child(1)').click();
+        
+//         // Wait for the "Details" links to appear
+//         await frame.waitForSelector('a:has-text("Detail Information")', { 
+//             state: 'visible', 
+//             timeout: 10000 
+//         });
+        
+//         await frame.waitForTimeout(1000);
+        
+//         // Get ONLY the rows with "Details" links (the actual job rows)
+//         const detailsLinks = await frame.locator('a:has-text("Detail Information")').all();
+        
+//         console.log(`Found ${detailsLinks.length} job items with Details links`);
+        
+//         res.status(200).json(successResponse('fill-job-payment-table', { 
+//             message: 'Search completed',
+//             itemCount: detailsLinks.length,
+//             fromDate: `${day}/${month}/${year}`
+//         }));
+
+//     } catch (err) {
+//         console.error(err);
+//         res.status(200).json(errorResponse('fill-job-payment-table', err));
+//     }
+// });
+
+// route to select IGH from the dropdown; click accepted and fill date to 1 day ago
+// DO NOT DELETE
+
+
+
 router.post("/fill-job-payment-table", async (req, res) => {
     try {
-        
+        const { currentDate } = req.body; // Pass DD/MM/YYYY or 'NO'
+
         const page = getPage();
         
         // Iframe selector
@@ -199,22 +296,17 @@ router.post("/fill-job-payment-table", async (req, res) => {
         });
         
         const frame = await frameElement.contentFrame();
-        
-        if (!frame) {
-            throw new Error('Could not access iframe content');
-        }
-        
+        if (!frame) throw new Error('Could not access iframe content');
+
         // Select Job Type as IGH
         await frame.waitForSelector('select[name="jobType"]', { 
             state: 'visible', 
             timeout: 10000 
         });
-        
         await frame.waitForTimeout(500);
-        
         await frame.selectOption('select[name="jobType"]', 'IGH');
         await frame.waitForTimeout(500);
-        
+
         // Check accepted radio button
         await frame.waitForSelector('input[name="accepted"][value="Y"]', {
             state: 'visible',
@@ -222,49 +314,53 @@ router.post("/fill-job-payment-table", async (req, res) => {
         });
         await frame.click('input[name="accepted"][value="Y"]');
         await frame.waitForTimeout(500);
-        
-        // Date logic
-        const today = new Date();
-        const oneDayAgo = new Date(today);
-        // Get 1 day before current date
-        oneDayAgo.setDate(today.getDate() - 1);
-        
-        const day = String(oneDayAgo.getDate()).padStart(2, '0');
-        const month = String(oneDayAgo.getMonth() + 1).padStart(2, '0');
-        const year = String(oneDayAgo.getFullYear());
-        
+
+        // ===== DATE LOGIC =====
+        let baseDate;
+        if (currentDate && currentDate !== 'NO') {
+            const [dd, mm, yyyy] = currentDate.split('/').map(Number);
+            baseDate = new Date(yyyy, mm - 1, dd);
+        } else {
+            baseDate = new Date();
+        }
+
+        // Subtract 1 day
+        baseDate.setDate(baseDate.getDate() - 1);
+
+        const day = String(baseDate.getDate()).padStart(2, '0');
+        const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+        const year = String(baseDate.getFullYear());
+
         // Fill the from section
         await frame.fill('input[name="fDD"]', day);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="fMM"]', month);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="fYYYY"]', year);
-        
+
         // Fill the to section
         await frame.fill('input[name="tDD"]', day);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="tMM"]', month);
         await frame.waitForTimeout(200);
         await frame.fill('input[name="tYYYY"]', year);
-        
+
         await frame.waitForTimeout(500);
-        
+
         // Submit button
         await frame.locator('body > form > table > tbody > tr:nth-child(8) > td > input[type=submit]:nth-child(1)').click();
-        
+
         // Wait for the "Details" links to appear
         await frame.waitForSelector('a:has-text("Detail Information")', { 
             state: 'visible', 
             timeout: 10000 
         });
-        
         await frame.waitForTimeout(1000);
-        
+
         // Get ONLY the rows with "Details" links (the actual job rows)
         const detailsLinks = await frame.locator('a:has-text("Detail Information")').all();
-        
         console.log(`Found ${detailsLinks.length} job items with Details links`);
-        
+
         res.status(200).json(successResponse('fill-job-payment-table', { 
             message: 'Search completed',
             itemCount: detailsLinks.length,

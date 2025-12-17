@@ -206,8 +206,204 @@ router.post("/click-enquire-invoice", async (req, res) => {
 });
 
 // route to select IGH from the dropdown; fill date to 1 week ago - for LD only
+// do not delete
+// router.post("/fill-job-payment-tableLD", async (req, res) => {
+//   try {
+//     const page = getPage();
+
+//     const frameElement = await page.waitForSelector('iframe.frame__webview', {
+//       state: 'attached',
+//       timeout: 10000
+//     });
+
+//     const frame = await frameElement.contentFrame();
+
+//     if (!frame) {
+//       throw new Error('Could not access iframe content');
+//     }
+
+//     await frame.waitForSelector('select[name="invoiceType"]', {
+//       state: 'visible',
+//       timeout: 10000
+//     });
+
+//     await frame.waitForTimeout(500);
+
+//     await frame.selectOption('select[name="invoiceType"]', 'LD');
+//     await frame.waitForTimeout(500);
+
+//     // Date logic: one week ago
+//     const today = new Date();
+//     const oneWeekAgo = new Date(today);
+//     oneWeekAgo.setDate(today.getDate() - 7);
+
+//     const day = String(oneWeekAgo.getDate()).padStart(2, '0');
+//     const month = String(oneWeekAgo.getMonth() + 1).padStart(2, '0');
+//     const year = String(oneWeekAgo.getFullYear());
+
+//     await frame.fill('input[name="fDD"]', day);
+//     await frame.waitForTimeout(200);
+//     await frame.fill('input[name="fMM"]', month);
+//     await frame.waitForTimeout(200);
+//     await frame.fill('input[name="fYYYY"]', year);
+
+//     await frame.waitForTimeout(500);
+
+//     // submit
+//     await frame.locator('body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)').click();
+
+//     // Wait up to timeout for either details links OR the "No record found" error text.
+//     const timeout = 10000;
+//     const pollInterval = 500;
+//     const start = Date.now();
+
+//     let detailsCount = 0;
+//     let noRecordDetected = false;
+
+//     while (Date.now() - start < timeout) {
+//       detailsCount = await frame.locator('a:has-text("Detail Information")').count();
+//       const noRecordCount = await frame.locator('text=No record found').count();
+
+//       if (detailsCount > 0) {
+//         break;
+//       }
+
+//       if (noRecordCount > 0) {
+//         noRecordDetected = true;
+//         break;
+//       }
+
+//       await frame.waitForTimeout(pollInterval);
+//     }
+
+//     if (detailsCount > 0) {
+//       console.log(`Found ${detailsCount} job items with Details links`);
+//       return res.status(200).json(successResponse('fill-job-payment-tableLD', {
+//         message: 'Search completed',
+//         itemCount: detailsCount,
+//         fromDate: `${day}/${month}/${year}`
+//       }));
+//     }
+
+//     if (noRecordDetected) {
+//       console.log('No job items found (page shows "No record found").');
+//       return res.status(200).json(successResponse('fill-job-payment-tableLD', {
+//         message: 'No job items found',
+//         itemCount: 0,
+//         fromDate: `${day}/${month}/${year}`
+//       }));
+//     }
+
+//     console.warn('Timeout waiting for search results or no-record message.');
+//     throw new Error('Timeout waiting for search results');
+//   } catch (err) {
+//     console.error(err);
+//     res.status(200).json(errorResponse('fill-job-payment-tableLD', err));
+//   }
+// });
+
+// route to select IGH from the dropdown; fill date to 1 week ago - for NSIR only
+// do not delete
+// router.post("/fill-job-payment-tableNISR", async (req, res) => {
+//   try {
+//     const page = getPage();
+
+//     const frameElement = await page.waitForSelector('iframe.frame__webview', {
+//       state: 'attached',
+//       timeout: 10000
+//     });
+
+//     const frame = await frameElement.contentFrame();
+
+//     if (!frame) {
+//       throw new Error('Could not access iframe content');
+//     }
+
+//     await frame.waitForSelector('select[name="invoiceType"]', {
+//       state: 'visible',
+//       timeout: 10000
+//     });
+
+//     await frame.waitForTimeout(500);
+
+//     await frame.selectOption('select[name="invoiceType"]', 'NISR');
+//     await frame.waitForTimeout(500);
+
+//     // Date logic: one week ago
+//     const today = new Date();
+//     const oneWeekAgo = new Date(today);
+//     oneWeekAgo.setDate(today.getDate() - 7);
+
+//     const day = String(oneWeekAgo.getDate()).padStart(2, '0');
+//     const month = String(oneWeekAgo.getMonth() + 1).padStart(2, '0');
+//     const year = String(oneWeekAgo.getFullYear());
+
+//     await frame.fill('input[name="fDD"]', day);
+//     await frame.waitForTimeout(200);
+//     await frame.fill('input[name="fMM"]', month);
+//     await frame.waitForTimeout(200);
+//     await frame.fill('input[name="fYYYY"]', year);
+
+//     await frame.waitForTimeout(500);
+
+//     // submit
+//     await frame.locator('body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)').click();
+
+//     const timeout = 10000;
+//     const pollInterval = 500;
+//     const start = Date.now();
+
+//     let detailsCount = 0;
+//     let noRecordDetected = false;
+
+//     while (Date.now() - start < timeout) {
+//       detailsCount = await frame.locator('a:has-text("Detail Information")').count();
+//       const noRecordCount = await frame.locator('text=No record found').count();
+
+//       if (detailsCount > 0) {
+//         break;
+//       }
+
+//       if (noRecordCount > 0) {
+//         noRecordDetected = true;
+//         break;
+//       }
+
+//       await frame.waitForTimeout(pollInterval);
+//     }
+
+//     if (detailsCount > 0) {
+//       console.log(`Found ${detailsCount} job items with Details links`);
+//       return res.status(200).json(successResponse('fill-job-payment-tableNISR', {
+//         message: 'Search completed',
+//         itemCount: detailsCount,
+//         fromDate: `${day}/${month}/${year}`
+//       }));
+//     }
+
+//     if (noRecordDetected) {
+//       console.log('No job items found (page shows "No record found").');
+//       return res.status(200).json(successResponse('fill-job-payment-tableNISR', {
+//         message: 'No job items found',
+//         itemCount: 0,
+//         fromDate: `${day}/${month}/${year}`
+//       }));
+//     }
+
+//     console.warn('Timeout waiting for search results or no-record message.');
+//     throw new Error('Timeout waiting for search results');
+//   } catch (err) {
+//     console.error(err);
+//     res.status(200).json(errorResponse('fill-job-payment-tableNISR', err));
+//   }
+// });
+
+
+// route to select IGH from the dropdown; fill date to 1 week ago - for LD only
+// do not delete
 router.post("/fill-job-payment-tableLD", async (req, res) => {
   try {
+    const { currentDate } = req.body; // Pass DD/MM/YYYY or 'NO'
     const page = getPage();
 
     const frameElement = await page.waitForSelector('iframe.frame__webview', {
@@ -216,29 +412,38 @@ router.post("/fill-job-payment-tableLD", async (req, res) => {
     });
 
     const frame = await frameElement.contentFrame();
-
-    if (!frame) {
-      throw new Error('Could not access iframe content');
-    }
+    if (!frame) throw new Error('Could not access iframe content');
 
     await frame.waitForSelector('select[name="invoiceType"]', {
       state: 'visible',
       timeout: 10000
     });
-
     await frame.waitForTimeout(500);
-
     await frame.selectOption('select[name="invoiceType"]', 'LD');
     await frame.waitForTimeout(500);
 
-    // Date logic: one week ago
-    const today = new Date();
-    const oneWeekAgo = new Date(today);
-    oneWeekAgo.setDate(today.getDate() - 7);
+    // ===== DATE LOGIC =====
+    let baseDate;
+    let toBaseDate;
+    if (currentDate && currentDate !== 'NO') {
+      const [dd, mm, yyyy] = currentDate.split('/').map(Number);
+      baseDate = new Date(yyyy, mm - 1, dd);
+      toBaseDate = new Date(yyyy, mm - 1, dd);
+    } else {
+      baseDate = new Date();
+    }
 
-    const day = String(oneWeekAgo.getDate()).padStart(2, '0');
-    const month = String(oneWeekAgo.getMonth() + 1).padStart(2, '0');
-    const year = String(oneWeekAgo.getFullYear());
+    // Subtract 7 days
+    baseDate.setDate(baseDate.getDate() - 7);
+    toBaseDate.setDate(toBaseDate.getDate() - 0);
+
+    const day = String(baseDate.getDate()).padStart(2, '0');
+    const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+    const year = String(baseDate.getFullYear());
+
+    const new2day = String(toBaseDate.getDate()).padStart(2, '0');
+    const new2month = String(toBaseDate.getMonth() + 1).padStart(2, '0');
+    const new2year = String(toBaseDate.getFullYear());
 
     await frame.fill('input[name="fDD"]', day);
     await frame.waitForTimeout(200);
@@ -246,8 +451,13 @@ router.post("/fill-job-payment-tableLD", async (req, res) => {
     await frame.waitForTimeout(200);
     await frame.fill('input[name="fYYYY"]', year);
 
-    await frame.waitForTimeout(500);
+    await frame.fill('input[name="tDD"]', new2day);
+    await frame.waitForTimeout(200);
+    await frame.fill('input[name="tMM"]', new2month);
+    await frame.waitForTimeout(200);
+    await frame.fill('input[name="tYYYY"]', new2year);
 
+    await frame.waitForTimeout(500);
     // submit
     await frame.locator('body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)').click();
 
@@ -263,15 +473,11 @@ router.post("/fill-job-payment-tableLD", async (req, res) => {
       detailsCount = await frame.locator('a:has-text("Detail Information")').count();
       const noRecordCount = await frame.locator('text=No record found').count();
 
-      if (detailsCount > 0) {
-        break;
-      }
-
+      if (detailsCount > 0) break;
       if (noRecordCount > 0) {
         noRecordDetected = true;
         break;
       }
-
       await frame.waitForTimeout(pollInterval);
     }
 
@@ -302,8 +508,10 @@ router.post("/fill-job-payment-tableLD", async (req, res) => {
 });
 
 // route to select IGH from the dropdown; fill date to 1 week ago - for NSIR only
+// do not delete
 router.post("/fill-job-payment-tableNISR", async (req, res) => {
   try {
+    const { currentDate } = req.body; // Pass DD/MM/YYYY or 'NO'
     const page = getPage();
 
     const frameElement = await page.waitForSelector('iframe.frame__webview', {
@@ -312,37 +520,52 @@ router.post("/fill-job-payment-tableNISR", async (req, res) => {
     });
 
     const frame = await frameElement.contentFrame();
-
-    if (!frame) {
-      throw new Error('Could not access iframe content');
-    }
+    if (!frame) throw new Error('Could not access iframe content');
 
     await frame.waitForSelector('select[name="invoiceType"]', {
       state: 'visible',
       timeout: 10000
     });
-
     await frame.waitForTimeout(500);
-
     await frame.selectOption('select[name="invoiceType"]', 'NISR');
     await frame.waitForTimeout(500);
 
-    // Date logic: one week ago
-    const today = new Date();
-    const oneWeekAgo = new Date(today);
-    oneWeekAgo.setDate(today.getDate() - 7);
+    // ===== DATE LOGIC =====
+    let baseDate;
+    let toBaseDate;
+    toBaseDate.setDate(batoBaseDateeDate.getDate() - 0);
+    if (currentDate && currentDate !== 'NO') {
+      const [dd, mm, yyyy] = currentDate.split('/').map(Number);
+      baseDate = new Date(yyyy, mm - 1, dd);
+      toBaseDate = new Date(yyyy, mm - 1, dd);
+    } else {
+      baseDate = new Date();
+    }
 
-    const day = String(oneWeekAgo.getDate()).padStart(2, '0');
-    const month = String(oneWeekAgo.getMonth() + 1).padStart(2, '0');
-    const year = String(oneWeekAgo.getFullYear());
+    // Subtract 7 days
+    baseDate.setDate(baseDate.getDate() - 7);
+    toBaseDate.setDate(baseDate.getDate() - 0);
+
+    const day = String(baseDate.getDate()).padStart(2, '0');
+    const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+    const year = String(baseDate.getFullYear());
+
+    const new2day = String(toBaseDate.getDate()).padStart(2, '0');
+    const new2month = String(toBaseDate.getMonth() + 1).padStart(2, '0');
+    const new2year = String(toBaseDate.getFullYear());
 
     await frame.fill('input[name="fDD"]', day);
     await frame.waitForTimeout(200);
     await frame.fill('input[name="fMM"]', month);
     await frame.waitForTimeout(200);
     await frame.fill('input[name="fYYYY"]', year);
-
     await frame.waitForTimeout(500);
+
+    await frame.fill('input[name="tDD"]', new2day);
+    await frame.waitForTimeout(200);
+    await frame.fill('input[name="tMM"]', new2month);
+    await frame.waitForTimeout(200);
+    await frame.fill('input[name="tYYYY"]', new2year);
 
     // submit
     await frame.locator('body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)').click();
@@ -358,15 +581,11 @@ router.post("/fill-job-payment-tableNISR", async (req, res) => {
       detailsCount = await frame.locator('a:has-text("Detail Information")').count();
       const noRecordCount = await frame.locator('text=No record found').count();
 
-      if (detailsCount > 0) {
-        break;
-      }
-
+      if (detailsCount > 0) break;
       if (noRecordCount > 0) {
         noRecordDetected = true;
         break;
       }
-
       await frame.waitForTimeout(pollInterval);
     }
 
@@ -395,6 +614,7 @@ router.post("/fill-job-payment-tableNISR", async (req, res) => {
     res.status(200).json(errorResponse('fill-job-payment-tableNISR', err));
   }
 });
+
 
 // Click a specific "Details" link by index
 router.post("/click-job-item", async (req, res) => {
