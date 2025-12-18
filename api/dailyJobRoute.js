@@ -205,95 +205,7 @@ router.post("/click-job-payment", async (req, res) => {
     }
 });
 
-// route to select IGH from the dropdown
-// DO NOT DELETE - actual current date
-// router.post("/fill-job-payment-table", async (req, res) => {
-//     try {
-//         const page = getPage();
-        
-//         const frameElement = await page.waitForSelector('iframe.frame__webview', { 
-//             state: 'attached', 
-//             timeout: 10000 
-//         });
-        
-//         const frame = await frameElement.contentFrame();
-        
-//         if (!frame) {
-//             throw new Error('Could not access iframe content');
-//         }
-        
-//         // Select job type as IGH
-//         await frame.waitForSelector('select[name="jobTy"]', { 
-//             state: 'visible', 
-//             timeout: 10000 
-//         });
-        
-//         await frame.waitForTimeout(500);
-        
-//         await frame.selectOption('select[name="jobTy"]', 'IGH');
-//         await frame.waitForTimeout(500);
-        
-//         // Select accepted radio button
-//         await frame.waitForSelector('input[name="acptI"][value="Y"]', {
-//             state: 'visible',
-//             timeout: 5000
-//         });
-//         await frame.click('input[name="acptI"][value="Y"]');
-//         await frame.waitForTimeout(500);
-        
-//         // Date logic
-//         const today = new Date();
-//         const threeDaysAgo = new Date(today);
-//         threeDaysAgo.setDate(today.getDate() - 3);
-        
-//         const day = String(threeDaysAgo.getDate()).padStart(2, '0');
-//         const month = String(threeDaysAgo.getMonth() + 1).padStart(2, '0');
-//         const year = String(threeDaysAgo.getFullYear());
-        
-//         // Fill From date
-//         await frame.fill('input[name="shftDtFrDD"]', day);
-//         await frame.waitForTimeout(200);
-//         await frame.fill('input[name="shftDtFrMM"]', month);
-//         await frame.waitForTimeout(200);
-//         await frame.fill('input[name="shftDtFrYYYY"]', year);
-        
-//         // Fill To date
-//         await frame.fill('input[name="shftDtToDD"]', day);
-//         await frame.waitForTimeout(200);
-//         await frame.fill('input[name="shftDtToMM"]', month);
-//         await frame.waitForTimeout(200);
-//         await frame.fill('input[name="shftDtToYYYY"]', year);
-        
-//         await frame.waitForTimeout(500);
-        
-//         // Click submit button
-//         await frame.locator('body > form > table:nth-child(8) > tbody > tr > td > input[type=button]:nth-child(1)').click();
-        
-//         // Wait for the "Details" links to appear
-//         await frame.waitForSelector('a:has-text("Details")', { 
-//             state: 'visible', 
-//             timeout: 10000 
-//         });
-        
-//         await frame.waitForTimeout(1000);
-        
-//         // Get ONLY the rows with "Details" links
-//         const detailsLinks = await frame.locator('a:has-text("Details")').all();
-        
-//         console.log(`Found ${detailsLinks.length} job items with Details links`);
-        
-//         res.status(200).json(successResponse('fill-job-payment-table', { 
-//             message: 'Search completed',
-//             itemCount: detailsLinks.length,
-//             fromDate: `${day}/${month}/${year}`
-//         }));
-
-//     } catch (err) {
-//         console.error(err);
-//         res.status(200).json(errorResponse('fill-job-payment-table', err));
-//     }
-// });
-
+// route to fill table for daily jobs
 router.post("/fill-job-payment-table", async (req, res) => {
     try {
         const { currentDate } = req.body;
@@ -328,7 +240,6 @@ router.post("/fill-job-payment-table", async (req, res) => {
         await frame.click('input[name="acptI"][value="Y"]');
         await frame.waitForTimeout(500);
 
-        // ================= DATE LOGIC =================
         let today = new Date(); // default fallback
 
         if (currentDate && currentDate.trim() !== '') {
@@ -399,7 +310,6 @@ router.post("/fill-job-payment-table", async (req, res) => {
         res.status(200).json(errorResponse('fill-job-payment-table', err));
     }
 });
-
 
 // Click a specific "Details" link by index
 router.post("/click-job-item", async (req, res) => {
@@ -490,87 +400,115 @@ router.post("/click-summary-of-igh-moves", async (req, res) => {
 
 // route to download and rename excel files
 router.post("/download-and-rename-excel", async (req, res) => {
-    try {
-        const { index } = req.body;
-        
-        const page = getPage();
-        
-        const frameElement = await page.waitForSelector('iframe.frame__webview', { 
-            state: 'attached', 
-            timeout: 10000 
-        });
-        
-        const frame = await frameElement.contentFrame();
-        
-        if (!frame) {
-            throw new Error('Could not access iframe content');
-        }
-        
-        // Wait for the "Download To Excel" button to be visible
-        await frame.waitForSelector('input[type="submit"][value="Download To Excel"]', { 
-            state: 'visible', 
-            timeout: 10000 
-        });
-        
-        await frame.waitForTimeout(500);
-        
-        // Get current date in Singapore timezone
-        const now = new Date();
-        const singaporeNow = new Date(now.toLocaleString('en-US', { 
-            timeZone: 'Asia/Singapore'
-        }));
-        
-        // Subtract 3 days
-        singaporeNow.setDate(singaporeNow.getDate() - 3);
-        
-        // Format date (DD MMM format)
-        const day = String(singaporeNow.getDate()).padStart(2, '0');
-        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
-                           'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-        const month = monthNames[singaporeNow.getMonth()];
-        
-        // Create filename: DD MMM #
-        const fileNumber = index + 1;
-        const newFileName = `${day} ${month} ${fileNumber}.xls`;
-        
-        console.log(`Downloading Excel file and renaming to: ${newFileName}`);
-        
-        // Save to file - define path
-        const downloadPath = (process.env.LOCALFILE_PATH);
-        
-        // Set up download listener on the PAGE (not frame)
-        const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
-        
-        // Click the "Download To Excel" button
-        await frame.locator('input[type="submit"][value="Download To Excel"]').click();
-        
-        console.log('Waiting for download to start...');
-        
-        // Wait for download to start
-        const download = await downloadPromise;
-        
-        console.log('Download started, saving file...');
-        
-        // Save the file with the new name
-        const filePath = path.join(downloadPath, newFileName);
-        await download.saveAs(filePath);
-        
-        console.log(`File saved as: ${filePath}`);
-        
-        await frame.waitForTimeout(1000);
-        
-        res.status(200).json(successResponse('download-and-rename-excel', { 
-            message: 'Successfully downloaded and renamed Excel file',
-            fileName: newFileName,
-            filePath: filePath,
-            index: index,
-            fileNumber: fileNumber
-        }));
+  try {
+    const { index, currentDate } = req.body;
+    const page = getPage();
 
-    } catch (err) {
-        console.error('Download error:', err);
-        res.status(200).json(errorResponse('download-and-rename-excel', err));
+    const frameElement = await page.waitForSelector('iframe.frame__webview', {
+      state: 'attached',
+      timeout: 10000
+    });
+    const frame = await frameElement.contentFrame();
+
+    if (!frame) {
+      throw new Error('Could not access iframe content');
     }
+
+    // Wait for the "Download To Excel" button to be visible
+    await frame.waitForSelector('input[type="submit"][value="Download To Excel"]', {
+      state: 'visible',
+      timeout: 10000
+    });
+    await frame.waitForTimeout(500);
+
+    // Try to parse and validate the provided date
+    let targetDate = null;
+    
+    if (currentDate && typeof currentDate === 'string') {
+      const parts = currentDate.trim().split('/');
+      
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
+
+        // Check if all parts are valid numbers and in valid ranges
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year) &&
+            month >= 1 && month <= 12 && 
+            day >= 1 && day <= 31 && 
+            year >= 1900 && year <= 2100) {
+          
+          // Create date object (month is 0-indexed in JS)
+          const testDate = new Date(year, month - 1, day);
+
+          // Verify the date is valid (handles invalid dates like 31/02/2024)
+          if (testDate.getDate() === day && 
+              testDate.getMonth() === month - 1 && 
+              testDate.getFullYear() === year) {
+            targetDate = testDate;
+            console.log(`Using provided date: ${currentDate}`);
+          }
+        }
+      }
+    }
+
+    // If date parsing failed, use Singapore current date
+    if (!targetDate) {
+      console.log('Invalid date provided, using Singapore current date');
+      const now = new Date();
+      targetDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Singapore' }));
+    }
+
+    // Subtract 3 days
+    targetDate.setDate(targetDate.getDate() - 3);
+
+    // Format date (DD MMM format)
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const month = monthNames[targetDate.getMonth()];
+
+    // Create filename: DD MMM #
+    const fileNumber = index + 1;
+    const newFileName = `${day} ${month} ${fileNumber}.xls`;
+
+    console.log(`Downloading Excel file and renaming to: ${newFileName}`);
+
+    // Save to file - define path
+    const downloadPath = (process.env.LOCALFILE_PATH);
+
+    // Set up download listener on the PAGE (not frame)
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+
+    // Click the "Download To Excel" button
+    await frame.locator('input[type="submit"][value="Download To Excel"]').click();
+
+    console.log('Waiting for download to start...');
+
+    // Wait for download to start
+    const download = await downloadPromise;
+
+    console.log('Download started, saving file...');
+
+    // Save the file with the new name
+    const filePath = path.join(downloadPath, newFileName);
+    await download.saveAs(filePath);
+
+    console.log(`File saved as: ${filePath}`);
+
+    await frame.waitForTimeout(1000);
+
+    res.status(200).json(successResponse('download-and-rename-excel', {
+      message: 'Successfully downloaded and renamed Excel file',
+      fileName: newFileName,
+      filePath: filePath,
+      index: index,
+      fileNumber: fileNumber
+    }));
+
+  } catch (err) {
+    console.error('Download error:', err);
+    res.status(200).json(errorResponse('download-and-rename-excel', err));
+  }
 });
 
 // route to click back button from the excel download page
@@ -654,7 +592,6 @@ router.post("/click-back-button2", async (req, res) => {
         res.status(200).json(errorResponse('click-back-button2', err));
     }
 });
-
 
 // route to delete all files in the local folder
 router.delete('/delete-files', async (req, res) => {
