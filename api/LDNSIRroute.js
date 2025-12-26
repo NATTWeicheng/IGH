@@ -205,163 +205,163 @@ router.post("/click-enquire-invoice", async (req, res) => {
     }
 });
 
-// route to fill job payment table for LD only
-router.post("/fill-job-payment-tableLD", async (req, res) => {
-  try {
-    const { currentDate } = req.body;
-    const page = getPage();
+  // route to fill job payment table for LD only
+  router.post("/fill-job-payment-tableLD", async (req, res) => {
+    try {
+      const { currentDate } = req.body;
+      const page = getPage();
 
-    const frameElement = await page.waitForSelector('iframe.frame__webview', {
-      state: 'attached',
-      timeout: 10000
-    });
+      const frameElement = await page.waitForSelector('iframe.frame__webview', {
+        state: 'attached',
+        timeout: 10000
+      });
 
-    const frame = await frameElement.contentFrame();
-    if (!frame) throw new Error('Could not access iframe content');
+      const frame = await frameElement.contentFrame();
+      if (!frame) throw new Error('Could not access iframe content');
 
-    await frame.waitForSelector('select[name="invoiceType"]', {
-      state: 'visible',
-      timeout: 10000
-    });
-    await frame.selectOption('select[name="invoiceType"]', 'LD');
+      await frame.waitForSelector('select[name="invoiceType"]', {
+        state: 'visible',
+        timeout: 10000
+      });
+      await frame.selectOption('select[name="invoiceType"]', 'LD');
 
-    let fromDate = new Date();
-    let toDate = new Date();
+      let fromDate = new Date();
+      let toDate = new Date();
 
-    if (currentDate && /^\d{2}\/\d{2}\/\d{4}$/.test(currentDate)) {
-      const [dd, mm, yyyy] = currentDate.split('/').map(Number);
-      const parsed = new Date(yyyy, mm - 1, dd);
-      if (!isNaN(parsed.getTime())) {
-        fromDate = new Date(parsed);
-        toDate = new Date(parsed);
+      if (currentDate && /^\d{2}\/\d{2}\/\d{4}$/.test(currentDate)) {
+        const [dd, mm, yyyy] = currentDate.split('/').map(Number);
+        const parsed = new Date(yyyy, mm - 1, dd);
+        if (!isNaN(parsed.getTime())) {
+          fromDate = new Date(parsed);
+          toDate = new Date(parsed);
+        }
       }
-    }
 
-    fromDate.setDate(fromDate.getDate() - 7);
+      fromDate.setDate(fromDate.getDate() - 7);
 
-    const fDD = String(fromDate.getDate()).padStart(2, '0');
-    const fMM = String(fromDate.getMonth() + 1).padStart(2, '0');
-    const fYYYY = String(fromDate.getFullYear());
+      const fDD = String(fromDate.getDate()).padStart(2, '0');
+      const fMM = String(fromDate.getMonth() + 1).padStart(2, '0');
+      const fYYYY = String(fromDate.getFullYear());
 
-    const tDD = String(toDate.getDate()).padStart(2, '0');
-    const tMM = String(toDate.getMonth() + 1).padStart(2, '0');
-    const tYYYY = String(toDate.getFullYear());
+      const tDD = String(toDate.getDate()).padStart(2, '0');
+      const tMM = String(toDate.getMonth() + 1).padStart(2, '0');
+      const tYYYY = String(toDate.getFullYear());
 
-    await frame.fill('input[name="fDD"]', fDD);
-    await frame.fill('input[name="fMM"]', fMM);
-    await frame.fill('input[name="fYYYY"]', fYYYY);
+      await frame.fill('input[name="fDD"]', fDD);
+      await frame.fill('input[name="fMM"]', fMM);
+      await frame.fill('input[name="fYYYY"]', fYYYY);
 
-    await frame.fill('input[name="tDD"]', tDD);
-    await frame.fill('input[name="tMM"]', tMM);
-    await frame.fill('input[name="tYYYY"]', tYYYY);
+      await frame.fill('input[name="tDD"]', tDD);
+      await frame.fill('input[name="tMM"]', tMM);
+      await frame.fill('input[name="tYYYY"]', tYYYY);
 
-    await frame.locator(
-      'body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)'
-    ).click();
+      await frame.locator(
+        'body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)'
+      ).click();
 
-    const timeout = Date.now() + 10000;
-    let count = 0;
-    let noRecord = false;
+      const timeout = Date.now() + 10000;
+      let count = 0;
+      let noRecord = false;
 
-    while (Date.now() < timeout) {
-      count = await frame.locator('a:has-text("Detail Information")').count();
-      if (count > 0) break;
-      if (await frame.locator('text=No record found').count()) {
-        noRecord = true;
-        break;
+      while (Date.now() < timeout) {
+        count = await frame.locator('a:has-text("Detail Information")').count();
+        if (count > 0) break;
+        if (await frame.locator('text=No record found').count()) {
+          noRecord = true;
+          break;
+        }
+        await frame.waitForTimeout(500);
       }
-      await frame.waitForTimeout(500);
+
+      res.status(200).json(successResponse('fill-job-payment-tableLD', {
+        message: noRecord ? 'No job items found' : 'Search completed',
+        itemCount: count,
+        fromDate: `${fDD}/${fMM}/${fYYYY}`
+      }));
+    } catch (err) {
+      console.error(err);
+      res.status(200).json(errorResponse('fill-job-payment-tableLD', err));
     }
+  });
 
-    res.status(200).json(successResponse('fill-job-payment-tableLD', {
-      message: noRecord ? 'No job items found' : 'Search completed',
-      itemCount: count,
-      fromDate: `${fDD}/${fMM}/${fYYYY}`
-    }));
-  } catch (err) {
-    console.error(err);
-    res.status(200).json(errorResponse('fill-job-payment-tableLD', err));
-  }
-});
+  // route to fill job payment table for NISR
+  router.post("/fill-job-payment-tableNISR", async (req, res) => {
+    try {
+      const { currentDate } = req.body;
+      const page = getPage();
 
-// route to fill job payment table for NISR
-router.post("/fill-job-payment-tableNISR", async (req, res) => {
-  try {
-    const { currentDate } = req.body;
-    const page = getPage();
+      const frameElement = await page.waitForSelector('iframe.frame__webview', {
+        state: 'attached',
+        timeout: 10000
+      });
 
-    const frameElement = await page.waitForSelector('iframe.frame__webview', {
-      state: 'attached',
-      timeout: 10000
-    });
+      const frame = await frameElement.contentFrame();
+      if (!frame) throw new Error('Could not access iframe content');
 
-    const frame = await frameElement.contentFrame();
-    if (!frame) throw new Error('Could not access iframe content');
+      await frame.waitForSelector('select[name="invoiceType"]', {
+        state: 'visible',
+        timeout: 10000
+      });
+      await frame.selectOption('select[name="invoiceType"]', 'NISR');
 
-    await frame.waitForSelector('select[name="invoiceType"]', {
-      state: 'visible',
-      timeout: 10000
-    });
-    await frame.selectOption('select[name="invoiceType"]', 'NISR');
+      let fromDate = new Date();
+      let toDate = new Date();
 
-    let fromDate = new Date();
-    let toDate = new Date();
-
-    if (currentDate && /^\d{2}\/\d{2}\/\d{4}$/.test(currentDate)) {
-      const [dd, mm, yyyy] = currentDate.split('/').map(Number);
-      const parsed = new Date(yyyy, mm - 1, dd);
-      if (!isNaN(parsed.getTime())) {
-        fromDate = new Date(parsed);
-        toDate = new Date(parsed);
+      if (currentDate && /^\d{2}\/\d{2}\/\d{4}$/.test(currentDate)) {
+        const [dd, mm, yyyy] = currentDate.split('/').map(Number);
+        const parsed = new Date(yyyy, mm - 1, dd);
+        if (!isNaN(parsed.getTime())) {
+          fromDate = new Date(parsed);
+          toDate = new Date(parsed);
+        }
       }
-    }
 
-    fromDate.setDate(fromDate.getDate() - 7);
+      fromDate.setDate(fromDate.getDate() - 7);
 
-    const fDD = String(fromDate.getDate()).padStart(2, '0');
-    const fMM = String(fromDate.getMonth() + 1).padStart(2, '0');
-    const fYYYY = String(fromDate.getFullYear());
+      const fDD = String(fromDate.getDate()).padStart(2, '0');
+      const fMM = String(fromDate.getMonth() + 1).padStart(2, '0');
+      const fYYYY = String(fromDate.getFullYear());
 
-    const tDD = String(toDate.getDate()).padStart(2, '0');
-    const tMM = String(toDate.getMonth() + 1).padStart(2, '0');
-    const tYYYY = String(toDate.getFullYear());
+      const tDD = String(toDate.getDate()).padStart(2, '0');
+      const tMM = String(toDate.getMonth() + 1).padStart(2, '0');
+      const tYYYY = String(toDate.getFullYear());
 
-    await frame.fill('input[name="fDD"]', fDD);
-    await frame.fill('input[name="fMM"]', fMM);
-    await frame.fill('input[name="fYYYY"]', fYYYY);
+      await frame.fill('input[name="fDD"]', fDD);
+      await frame.fill('input[name="fMM"]', fMM);
+      await frame.fill('input[name="fYYYY"]', fYYYY);
 
-    await frame.fill('input[name="tDD"]', tDD);
-    await frame.fill('input[name="tMM"]', tMM);
-    await frame.fill('input[name="tYYYY"]', tYYYY);
+      await frame.fill('input[name="tDD"]', tDD);
+      await frame.fill('input[name="tMM"]', tMM);
+      await frame.fill('input[name="tYYYY"]', tYYYY);
 
-    await frame.locator(
-      'body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)'
-    ).click();
+      await frame.locator(
+        'body > form > table > tbody > tr:nth-child(7) > td > input[type=submit]:nth-child(1)'
+      ).click();
 
-    const timeout = Date.now() + 10000;
-    let count = 0;
-    let noRecord = false;
+      const timeout = Date.now() + 10000;
+      let count = 0;
+      let noRecord = false;
 
-    while (Date.now() < timeout) {
-      count = await frame.locator('a:has-text("Detail Information")').count();
-      if (count > 0) break;
-      if (await frame.locator('text=No record found').count()) {
-        noRecord = true;
-        break;
+      while (Date.now() < timeout) {
+        count = await frame.locator('a:has-text("Detail Information")').count();
+        if (count > 0) break;
+        if (await frame.locator('text=No record found').count()) {
+          noRecord = true;
+          break;
+        }
+        await frame.waitForTimeout(500);
       }
-      await frame.waitForTimeout(500);
-    }
 
-    res.status(200).json(successResponse('fill-job-payment-tableNISR', {
-      message: noRecord ? 'No job items found' : 'Search completed',
-      itemCount: count,
-      fromDate: `${fDD}/${fMM}/${fYYYY}`
-    }));
-  } catch (err) {
-    console.error(err);
-    res.status(200).json(errorResponse('fill-job-payment-tableNISR', err));
-  }
-});
+      res.status(200).json(successResponse('fill-job-payment-tableNISR', {
+        message: noRecord ? 'No job items found' : 'Search completed',
+        itemCount: count,
+        fromDate: `${fDD}/${fMM}/${fYYYY}`
+      }));
+    } catch (err) {
+      console.error(err);
+      res.status(200).json(errorResponse('fill-job-payment-tableNISR', err));
+    }
+  });
 
 // Click a specific "Details" link by index
 router.post("/click-job-item", async (req, res) => {
