@@ -25,98 +25,241 @@ router.post('/stop-chromium', async (req, res) => {
 // go to page
 router.post("/fill-login-details", async (req, res) => {
     try {
-        const result = await launchAndGoto(process.env.PORTNET_WEBSITE);
-        
+        await launchAndGoto(process.env.PORTNET_WEBSITE);
         const page = getPage();
-        
-        // Check timing BEFORE starting login
-        let authResult = getGoogleAuthCode();
-        console.log(`Pre-login timing check: ${authResult.code}, ${authResult.secondsRemaining}s remaining`);
-        
-        // If less than 15 seconds, wait for fresh code
+
+        // ===== PRE-LOGIN OTP CHECK =====
+        let authResult = getGoogleAuthCode(process.env.GOOGLE_AUTH_CODE2);
+        console.log(
+            `Pre-login timing check: ${authResult.code}, ${authResult.secondsRemaining}s remaining`
+        );
+
+        // If OTP is about to expire, wait for a fresh window
         if (authResult.secondsRemaining < 15) {
             const waitTime = (authResult.secondsRemaining + 2) * 1000;
             await page.waitForTimeout(waitTime);
-            authResult = getGoogleAuthCode();
+            authResult = getGoogleAuthCode(process.env.GOOGLE_AUTH_CODE2);
         }
-        
-        // Fill username
-        await page.waitForSelector('#mat-input-0', { state: 'visible', timeout: 10000 });
-        await page.locator('#mat-input-0').fill(process.env.PORTNET_USER);
-        
-        // Fill password
-        await page.waitForSelector('#mat-input-1', { state: 'visible', timeout: 10000 });
-        await page.locator('#mat-input-1').fill(process.env.PORTNET_PASSWORD);
 
-        // Click login
-        await page.locator('body > app-root > app-login-page > div > mat-sidenav-container > mat-sidenav-content > div.login-form > form > div:nth-child(3) > button').click();
-        
-        // Wait for 2FA page
+        // fill login details
+        await page.waitForSelector('#mat-input-0', { state: 'visible', timeout: 10000 });
+        await page.locator('#mat-input-0').fill(process.env.PORTNET_USER2);
+
+        await page.waitForSelector('#mat-input-1', { state: 'visible', timeout: 10000 });
+        await page.locator('#mat-input-1').fill(process.env.PORTNET_PASSWORD2);
+
+        await page.locator(
+            'body > app-root > app-login-page > div > mat-sidenav-container > mat-sidenav-content > div.login-form > form > div:nth-child(3) > button'
+        ).click();
+
+        // wait for 2fa 
         await page.waitForSelector('#PASSWORD', { state: 'visible', timeout: 10000 });
         console.log('2FA page loaded');
-        
-        // Get current code (should still have plenty of time)
-        authResult = getGoogleAuthCode();
-        console.log(`At 2FA page: ${authResult.code}, ${authResult.secondsRemaining}s remaining`);
-        
-        // Clear field first
-        await page.locator('#PASSWORD').clear();
+
+        // Generate OTP close to submission
+        authResult = getGoogleAuthCode(process.env.GOOGLE_AUTH_CODE2);
+        console.log(
+            `At 2FA page: ${authResult.code}, ${authResult.secondsRemaining}s remaining`
+        );
+
+        // ===== ENTER OTP =====
+        const otpInput = page.locator('#PASSWORD');
+
+        await otpInput.clear();
         await page.waitForTimeout(300);
-        
-        // Click to focus
-        await page.locator('#PASSWORD').click();
+        await otpInput.click();
         await page.waitForTimeout(200);
-        
-        // Fill the code
-        await page.locator('#PASSWORD').fill(authResult.code);
-        
-        // Verify it was actually filled
-        const filledValue = await page.locator('#PASSWORD').inputValue();
+        await otpInput.fill(authResult.code);
+
+        // Verify input
+        let filledValue = await otpInput.inputValue();
         console.log(`Verification - Expected: "${authResult.code}", Actual: "${filledValue}"`);
-        
+
+        // Retry once if fill failed
         if (filledValue !== authResult.code) {
-            console.warn('Fill failed, retrying...');
-            
-            // Retry once
-            await page.locator('#PASSWORD').clear();
+            console.warn('OTP fill failed, retrying...');
+            await otpInput.clear();
             await page.waitForTimeout(300);
-            await page.locator('#PASSWORD').click();
-            await page.waitForTimeout(200);
-            
-            // Type password
-            await page.locator('#PASSWORD').type(authResult.code, { delay: 50 });
-            
-            const retryValue = await page.locator('#PASSWORD').inputValue();
-            console.log(`Retry verification: "${retryValue}"`);
-            
-            if (retryValue !== authResult.code) {
-                throw new Error(`Failed to fill 2FA code. Expected: ${authResult.code}, Got: ${retryValue}`);
+            await otpInput.type(authResult.code, { delay: 50 });
+
+            filledValue = await otpInput.inputValue();
+            console.log(`Retry verification: "${filledValue}"`);
+
+            if (filledValue !== authResult.code) {
+                throw new Error(
+                    `Failed to fill 2FA code. Expected: ${authResult.code}, Got: ${filledValue}`
+                );
             }
         }
-        
-        // Click continue
+
+        // Submit 2FA
         await page.locator('#Continue').click();
-        
-        // Wait a bit for processing
         await page.waitForTimeout(3000);
-        
-        // Check current state
+
+        // ===== POST-LOGIN CHECK =====
         const currentUrl = page.url();
         console.log('Current URL:', currentUrl);
-        
-        // Check for error messages first
-        const errorCount = await page.locator('text=/invalid|incorrect|wrong|error/i').count();
+
+        const errorCount = await page
+            .locator('text=/invalid|incorrect|wrong|error/i')
+            .count();
+
         if (errorCount > 0) {
-            const errorText = await page.locator('text=/invalid|incorrect|wrong|error/i').first().textContent();
+            const errorText = await page
+                .locator('text=/invalid|incorrect|wrong|error/i')
+                .first()
+                .textContent();
             throw new Error(`2FA Error: ${errorText}`);
         }
 
-        return res.status(200).json(successResponse('fill-login-details', {
-            message: 'Login and 2FA completed successfully'
-        }));
+        return res.status(200).json(
+            successResponse('fill-login-details', {
+                message: 'Login and 2FA completed successfully'
+            })
+        );
 
     } catch (err) {
         console.error('Login error:', err);
-        return res.status(200).json(errorResponse('fill-login-details', err));
+        return res.status(200).json(
+            errorResponse('fill-login-details', err)
+        );
     }
 });
+
+// navigate to berth sail schedule page
+router.post('/goto-berth-sail-schedule', async (req, res) => {
+    try {
+        const page = getPage();
+
+        if (!page) {
+            throw new Error('Playwright page not initialized');
+        }
+
+        const targetUrl = 'https://www.portnet.com/report/en-US/berthsailsch';
+
+        await page.goto(targetUrl, {
+            waitUntil: 'networkidle',
+            timeout: 30000
+        });
+
+        console.log('Navigated to:', targetUrl);
+
+        return res.status(200).json(
+            successResponse('goto-berth-sail-schedule', {
+                message: 'Navigation successful',
+                url: page.url()
+            })
+        );
+
+    } catch (err) {
+        console.error('Navigation error:', err);
+        return res.status(200).json(
+            errorResponse('goto-berth-sail-schedule', err)
+        );
+    }
+});
+
+// search vessel and click search button
+router.post('/search-vessel', async (req, res) => {
+    try {
+        const page = getPage();
+
+        if (!page) {
+            throw new Error('Playwright page not initialized');
+        }
+
+        // Get vessel from request body
+        // const vessel = req.body.vessel;
+        
+        // Hardcoded vessel for testing
+        const vessel = "ACX CRYSTAL";
+
+        if (!vessel) {
+            throw new Error('Vessel name is required');
+        }
+
+        // Wait for and fill the vessel input
+        const vesselInput = '#ui-tabpanel-0 > div > div.p-col-3 > pc-auto-complete > p-autocomplete > span > input';
+        await page.waitForSelector(vesselInput, { state: 'visible', timeout: 10000 });
+        
+        await page.locator(vesselInput).clear();
+        await page.waitForTimeout(300);
+        await page.locator(vesselInput).pressSequentially(vessel, { delay: 30 }); // Type slower with 30ms delay between characters
+        await page.waitForTimeout(800); // Wait for autocomplete suggestions
+        
+        console.log(`Filled vessel: ${vessel}`);
+
+        // Click the search button after 0.3 seconds
+        const searchButton = '#ui-tabpanel-0 > div > div.p-col-2 > button > span';
+        await page.waitForSelector(searchButton, { state: 'visible', timeout: 10000 });
+        await page.waitForTimeout(300); // Wait 0.3 seconds before clicking
+        await page.locator(searchButton).click();
+        
+        console.log('Search button clicked');
+
+        // Wait for results to load
+        await page.waitForTimeout(2000);
+
+        return res.status(200).json(
+            successResponse('search-vessel', {
+                message: 'Vessel search completed successfully',
+                vessel: vessel
+            })
+        );
+
+    } catch (err) {
+        console.error('Vessel search error:', err);
+        return res.status(200).json(
+            errorResponse('search-vessel', err)
+        );
+    }
+});
+
+// filter by voyage number
+router.post('/filter-voyage', async (req, res) => {
+    try {
+        const page = getPage();
+
+        if (!page) {
+            throw new Error('Playwright page not initialized');
+        }
+
+        // Get voyage number from request body
+        // const voyageNo = req.body.voyageNo;
+        
+        // Hardcoded voyage for testing
+        const voyageNo = "7-014N";
+
+        if (!voyageNo) {
+            throw new Error('Voyage number is required');
+        }
+
+        // Wait for and fill the voyage number input
+        const voyageInput = '#ui-panel-0-content > div > p-table > div > div > table > thead > tr > th:nth-child(3) > input';
+        await page.waitForSelector(voyageInput, { state: 'visible', timeout: 10000 });
+        
+        await page.locator(voyageInput).clear();
+        await page.waitForTimeout(300);
+        await page.locator(voyageInput).pressSequentially(voyageNo, { delay: 100 }); // Type slower with 100ms delay
+        
+        console.log(`Filled voyage number: ${voyageNo}`);
+
+        // Wait for table to filter
+        await page.waitForTimeout(1000);
+
+        return res.status(200).json(
+            successResponse('filter-voyage', {
+                message: 'Voyage filter applied successfully',
+                voyageNo: voyageNo
+            })
+        );
+
+    } catch (err) {
+        console.error('Voyage filter error:', err);
+        return res.status(200).json(
+            errorResponse('filter-voyage', err)
+        );
+    }
+});
+
+module.exports = router;

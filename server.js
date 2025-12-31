@@ -14,6 +14,9 @@ app.use('/dailyInvoice', dailyInvoiceRoute)
 const LDNSIRroute = require('./api/LDNSIRroute')
 app.use('/LDNSIR', LDNSIRroute)
 
+const SGIVesselETA = require('./api/SGIVesselETA')
+app.use('/SGIVesselETA', SGIVesselETA)
+
 app.get('/', (req, res) => {
     res.send("This is the API server.")
 })
