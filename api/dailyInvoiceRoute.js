@@ -36,7 +36,7 @@ router.post("/fill-login-details", async (req, res) => {
         if (authResult.secondsRemaining < 15) {
             const waitTime = (authResult.secondsRemaining + 2) * 1000;
             await page.waitForTimeout(waitTime);
-            authResult = getGoogleAuthCode(process.env.GOOGLE_AUTH_CODE2);
+            authResult = getGoogleAuthCode(process.env.GOOGLE_AUTH_CODE);
         }
 
         // fill login details

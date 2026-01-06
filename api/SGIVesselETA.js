@@ -225,10 +225,10 @@ router.post('/filter-voyage', async (req, res) => {
         }
 
         // Get voyage number from request body
-        // const voyageNo = req.body.voyageNo;
-        
+        const voyageNo = req.body.voyageNo;
+
         // Hardcoded voyage for testing
-        const voyageNo = "7-014N";
+        // const voyageNo = "7-014N";
 
         if (!voyageNo) {
             throw new Error('Voyage number is required');
@@ -237,20 +237,58 @@ router.post('/filter-voyage', async (req, res) => {
         // Wait for and fill the voyage number input
         const voyageInput = '#ui-panel-0-content > div > p-table > div > div > table > thead > tr > th:nth-child(3) > input';
         await page.waitForSelector(voyageInput, { state: 'visible', timeout: 10000 });
-        
+
         await page.locator(voyageInput).clear();
         await page.waitForTimeout(300);
         await page.locator(voyageInput).pressSequentially(voyageNo, { delay: 100 }); // Type slower with 100ms delay
-        
+
         console.log(`Filled voyage number: ${voyageNo}`);
 
         // Wait for table to filter
         await page.waitForTimeout(1000);
 
+        // Check if "No record found" is displayed
+        const noResultSelector = '#ui-panel-0-content > div > p-table > div > div > table > tbody > tr > td';
+        const noResultElement = await page.locator(noResultSelector).first();
+
+        if (await noResultElement.isVisible().catch(() => false)) {
+            const text = await noResultElement.textContent();
+            if (text && text.includes('No record found')) {
+                console.log('No records found for voyage:', voyageNo);
+                return res.status(200).json(
+                    successResponse('filter-voyage', {
+                        message: 'No record found',
+                        voyageNo: voyageNo,
+                        resultCount: 0
+                    })
+                );
+            }
+        }
+
+        // Count the number of result rows (excluding the header row and "No record found" row)
+        const resultRowsSelector = '#ui-panel-0-content > div > p-table > div > div > table > tbody > tr';
+        const resultRows = await page.locator(resultRowsSelector).all();
+        const resultCount = resultRows.length;
+
+        console.log(`Found ${resultCount} result(s) for voyage:`, voyageNo);
+
+        // If more than 1 result, return error
+        if (resultCount > 1) {
+            return res.status(200).json(
+                successResponse('filter-voyage', {
+                    message: 'Multiple records found',
+                    voyageNo: voyageNo,
+                    resultCount: resultCount
+                })
+            );
+        }
+
+        // Exactly 1 result - success
         return res.status(200).json(
             successResponse('filter-voyage', {
                 message: 'Voyage filter applied successfully',
-                voyageNo: voyageNo
+                voyageNo: voyageNo,
+                resultCount: resultCount
             })
         );
 
@@ -258,6 +296,56 @@ router.post('/filter-voyage', async (req, res) => {
         console.error('Voyage filter error:', err);
         return res.status(200).json(
             errorResponse('filter-voyage', err)
+        );
+    }
+});
+
+// read berth time
+router.post('/read-berth-time', async (req, res) => {
+    try {
+        const page = getPage();
+
+        if (!page) {
+            throw new Error('Playwright page not initialized');
+        }
+
+        // Selector for berth time
+        const berthTimeSelector = '#ui-panel-0-content > div > p-table > div > div > table > tbody > tr > td:nth-child(10)';
+
+        // Wait for the berth time element to be visible
+        await page.waitForSelector(berthTimeSelector, { state: 'visible', timeout: 10000 });
+
+        // Get the content of the berth time element
+        const berthTimeContent = await page.locator(berthTimeSelector).textContent();
+
+        if (!berthTimeContent) {
+            throw new Error('Berth time content not found');
+        }
+
+        console.log('Berth Time Content:', berthTimeContent);
+
+        // Separate date and time
+        const [date, time] = berthTimeContent.split(' ');
+
+        // Convert date from DD-MM-YYYY to YYYY-MM-DD
+        const [day, month, year] = date.split('-');
+        const formattedDate = `${year}-${month}-${day}`;
+
+        console.log('Formatted Date:', formattedDate);
+        console.log('Time:', time);
+
+        return res.status(200).json(
+            successResponse('read-berth-time', {
+                message: 'Berth time read successfully',
+                date: formattedDate,
+                time: time
+            })
+        );
+
+    } catch (err) {
+        console.error('Read berth time error:', err);
+        return res.status(200).json(
+            errorResponse('read-berth-time', err)
         );
     }
 });
